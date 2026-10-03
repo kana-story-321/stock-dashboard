@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ワクワクルーレット</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎡</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <!-- ===== ログイン画面 ===== -->
+  <section id="login-view" class="view login-view" hidden>
+    <div class="login-card">
+      <div class="login-wheel" aria-hidden="true"></div>
+      <h1 class="logo">ワクワク<br>ルーレット</h1>
+      <p class="login-sub">好きな候補でルーレットを作って、<br>みんなでドキドキの抽選を！</p>
+      <button id="google-login" class="btn-google" type="button">
+        <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Googleでログイン
+      </button>
+      <p id="login-error" class="login-error" role="alert"></p>
+      <div id="setup-notice" class="setup-notice" hidden>
+        <strong>Firebase が未設定です</strong>
+        <p><code>roulette/firebase-config.js</code> に Firebase の設定を入れると Google ログインが有効になります（手順は README.md）。</p>
+        <button id="demo-login" class="btn-ghost" type="button">ブラウザ保存のデモモードで試す</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== アプリ本体 ===== -->
+  <section id="app-view" class="view app-view" hidden>
+    <header class="topbar">
+      <button id="menu-toggle" class="icon-btn only-mobile" type="button" aria-label="ルーレット一覧">☰</button>
+      <div class="brand">ワクワクルーレット</div>
+      <div class="top-actions">
+        <button id="sound-toggle" class="icon-btn" type="button" aria-label="効果音" title="効果音 ON/OFF">🔊</button>
+        <div class="user-chip">
+          <img id="user-avatar" alt="" referrerpolicy="no-referrer">
+          <span id="user-name"></span>
+        </div>
+        <button id="logout" class="btn-ghost small" type="button">ログアウト</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- 左：ルーレット一覧 -->
+      <aside id="sidebar" class="sidebar">
+        <div class="side-head">
+          <h2>マイルーレット</h2>
+          <button id="new-roulette" class="btn-primary small" type="button">＋ 新規</button>
+        </div>
+        <ul id="roulette-list" class="roulette-list"></ul>
+        <div class="templates">
+          <h3>テンプレートから作る</h3>
+          <div id="template-list" class="template-list"></div>
+        </div>
+      </aside>
+
+      <!-- 中央：ルーレット -->
+      <main class="stage">
+        <input id="roulette-title" class="title-input" maxlength="40" aria-label="ルーレット名">
+        <div class="wheel-wrap" id="wheel-wrap">
+          <div class="bulbs" id="bulbs" aria-hidden="true"></div>
+          <canvas id="wheel" width="600" height="600" aria-label="ルーレット"></canvas>
+          <div class="pointer" id="pointer" aria-hidden="true"></div>
+          <button id="hub" class="hub" type="button" aria-label="スタート／ストップ">GO</button>
+        </div>
+        <div class="current-label" id="current-label" aria-live="polite">&nbsp;</div>
+        <div class="controls">
+          <button id="start-btn" class="btn-big start" type="button">スタート</button>
+          <button id="stop-btn" class="btn-big stop" type="button" disabled>ストップ</button>
+        </div>
+        <label class="opt"><input type="checkbox" id="remove-winner"> 当たった候補は次回から外す</label>
+        <p class="hint">スペースキーでもスタート／ストップできます</p>
+      </main>
+
+      <!-- 右：候補の編集 -->
+      <aside class="editor">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="items" type="button" role="tab">候補</button>
+          <button class="tab" data-tab="history" type="button" role="tab">履歴</button>
+        </div>
+
+        <div class="tab-panel" id="panel-items">
+          <form id="add-form" class="add-form">
+            <input id="add-input" placeholder="候補を入力して Enter" maxlength="40" autocomplete="off">
+            <button class="btn-primary small" type="submit">追加</button>
+          </form>
+          <ul id="item-list" class="item-list"></ul>
+          <details class="bulk">
+            <summary>まとめて登録（1行に1候補）</summary>
+            <textarea id="bulk-input" rows="6" placeholder="ラーメン&#10;カレー&#10;寿司"></textarea>
+            <div class="bulk-actions">
+              <button id="bulk-append" class="btn-ghost small" type="button">追加する</button>
+              <button id="bulk-replace" class="btn-ghost small" type="button">置き換える</button>
+            </div>
+          </details>
+          <div class="editor-footer">
+            <button id="shuffle-colors" class="btn-ghost small" type="button">🎨 色をシャッフル</button>
+            <button id="restore-items" class="btn-ghost small" type="button">↩ 外した候補を戻す</button>
+            <button id="duplicate-roulette" class="btn-ghost small" type="button">⧉ 複製</button>
+            <button id="delete-roulette" class="btn-danger small" type="button">🗑 削除</button>
+          </div>
+          <p id="save-status" class="save-status"></p>
+        </div>
+
+        <div class="tab-panel" id="panel-history" hidden>
+          <ol id="history-list" class="history-list"></ol>
+          <button id="clear-history" class="btn-ghost small" type="button">履歴をクリア</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ローディング -->
+  <div id="loading" class="loading"><div class="spinner"></div></div>
+
+  <!-- 結果モーダル -->
+  <div id="result-modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="result-kicker">🎉 当たり 🎉</div>
+      <div class="result-text" id="result-text"></div>
+      <div class="modal-actions">
+        <button id="again-btn" class="btn-big start" type="button">もう一回！</button>
+        <button id="close-modal" class="btn-ghost" type="button">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
